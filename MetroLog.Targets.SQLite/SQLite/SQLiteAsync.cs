@@ -35,6 +35,7 @@ namespace MetroLog.NetCore.Targets.SQLite
         SQLiteConnectionString _connectionString;
         SQLiteOpenFlags _openFlags;
 
+
         public SQLiteAsyncConnection(string databasePath, bool storeDateTimeAsTicks = true)
             : this(databasePath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create, storeDateTimeAsTicks)
         {

@@ -53,7 +53,7 @@ namespace MetroLog.Targets
         {
             // defaults...
             this.RetainDays = 30;
-            this.DatabasePath = "MetroLogs/MetroLog.db";
+            this.DatabasePath = "MetroLogs\\MetroLog.db";
         }
 
         static SQLiteTarget()
@@ -77,31 +77,36 @@ namespace MetroLog.Targets
             return new LogWriteOperation(this, entry, true);
         }
 
-        async Task<SessionHeaderItem> GetSessionAsync(ILoggingEnvironment environment)
+        async Task<SessionHeaderItem> GetSessionAsync(ILoggingEnvironment environment, int nTimeout = 5000)
         {
-            // check...
-            Monitor.Enter(_headersLock);
             SessionHeaderItem header = null;
-            try
+            // check...
+            if (Monitor.TryEnter(_headersLock, nTimeout))
             {
-                if (Headers.TryGetValue(environment.SessionId, out header) == false)
+                try
                 {
-                    var conn = GetConnection();
-                    header = await conn.Table<SessionHeaderItem>().Where(v => v.SessionGuid == environment.SessionId).FirstOrDefaultAsync();
-                    if (header == null)
+                    if (Headers.TryGetValue(environment.SessionId, out header) == false)
                     {
-                        header = SessionHeaderItem.CreateForEnvironment(environment);
-                        await conn.InsertAsync(header);
+                        var conn = GetConnection();
+                        header = await conn.Table<SessionHeaderItem>().Where(v => v.SessionGuid == environment.SessionId).FirstOrDefaultAsync();
+                        if (header == null)
+                        {
+                            header = SessionHeaderItem.CreateForEnvironment(environment);
+                            await conn.InsertAsync(header);
+                        }
+                        // set...
+                        Headers[environment.SessionId] = header;
                     }
-                    // set...
-                    Headers[environment.SessionId] = header;
+                }
+                finally
+                {
+                    Monitor.Exit(_headersLock);
                 }
             }
-            finally
+            else
             {
-                Monitor.Exit(_headersLock);
+                throw new TimeoutException($"Timeout after {nTimeout} milliseconds");
             }
-
             // return...
             return header;
         }

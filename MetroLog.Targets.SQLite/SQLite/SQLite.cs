@@ -58,6 +58,7 @@ using Sqlite3Statement = Sqlite.Statement;
 using Sqlite3DatabaseHandle = SQLitePCL.sqlite3;
 using Sqlite3Statement = SQLitePCL.sqlite3_stmt;
 using Sqlite3 = SQLitePCL.raw;
+using System.IO;
 #else
 using Sqlite3DatabaseHandle = System.IntPtr;
 using Sqlite3Statement = System.IntPtr;
@@ -167,6 +168,11 @@ namespace MetroLog.NetCore.Targets.SQLite
 
         public bool StoreDateTimeAsTicks { get; private set; }
 
+        static SQLiteConnection()
+        {
+            SQLitePCL.Batteries.Init();
+        }
+
         /// <summary>
         /// Constructs a new SQLiteConnection and opens a SQLite database specified by databasePath.
         /// </summary>
@@ -206,6 +212,10 @@ namespace MetroLog.NetCore.Targets.SQLite
                 throw new ArgumentException("Must be specified", "databasePath");
 
             DatabasePath = databasePath;
+            FileInfo file = new FileInfo(DatabasePath);
+            if (!file.Directory.Exists)
+                file.Directory.Create();
+                
 
 #if NETFX_CORE
             //SQLite3.SetDirectory(/*temp directory type*/2, Windows.Storage.ApplicationData.Current.TemporaryFolder.Path);
@@ -222,6 +232,7 @@ namespace MetroLog.NetCore.Targets.SQLite
             var databasePathAsBytes = GetNullTerminatedUtf8(DatabasePath);
             var r = SQLite3.Open(databasePathAsBytes, out handle, (int)openFlags, IntPtr.Zero);
 #endif
+            
 
             Handle = handle;
             if (r != SQLite3.Result.OK)
@@ -3579,7 +3590,7 @@ namespace MetroLog.NetCore.Targets.SQLite
 #if USE_WP8_NATIVE_SQLITE
 			return (Result)Sqlite3.sqlite3_open_v2(filename, out db, flags, "");
 #else
-			return (Result)Sqlite3.sqlite3_open_v2(filename, out db, flags, null);
+			return (Result)Sqlite3.sqlite3_open_v2(filename, out db, flags,null);
 #endif
 		}
 
