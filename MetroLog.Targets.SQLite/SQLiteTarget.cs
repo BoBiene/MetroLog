@@ -141,9 +141,11 @@ namespace MetroLog.Targets
             if (this.DatabasePath.Contains("\\") || this.DatabasePath.Contains("/"))
             {
                 var folder = Path.GetDirectoryName(this.DatabasePath);
+                
                 try
                 {
-                    await ApplicationData.Current.LocalFolder.CreateFolderAsync(folder);
+                    
+                   await ApplicationData.Current.LocalFolder.CreateFolderAsync(folder,CreationCollisionOption.OpenIfExists);
                 }
                 catch
                 {
