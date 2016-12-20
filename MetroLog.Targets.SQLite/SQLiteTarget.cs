@@ -41,7 +41,7 @@ namespace MetroLog.Targets
         /// </summary>
         static Dictionary<Guid, SessionHeaderItem> Headers { get; set; }
 
-        static object _headersLock = new object();
+        private static readonly SemaphoreSlim m_headerLock = new SemaphoreSlim(1);
 
         public SQLiteTarget()
             : this(new NullLayout())
@@ -81,7 +81,7 @@ namespace MetroLog.Targets
         {
             SessionHeaderItem header = null;
             // check...
-            if (Monitor.TryEnter(_headersLock, nTimeout))
+            if (await m_headerLock.WaitAsync(nTimeout))
             {
                 try
                 {
@@ -100,7 +100,7 @@ namespace MetroLog.Targets
                 }
                 finally
                 {
-                    Monitor.Exit(_headersLock);
+                    m_headerLock.Release();
                 }
             }
             else
